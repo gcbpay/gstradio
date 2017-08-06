@@ -30,7 +30,7 @@ from .utils import odict
 import __builtin__
 
 
-ID_BLACKLIST = ['self', 'options', 'gr', 'blks2', 'wxgui', 'wx', 'math', 'forms', 'firdes'] + dir(__builtin__)
+ID_BLACKLIST = ['self', 'options', 'gr', 'math', 'firdes'] + dir(__builtin__)
 try:
     from gnuradio import gr
     ID_BLACKLIST.extend(attr for attr in dir(gr.top_block()) if not attr.startswith('_'))
@@ -49,14 +49,14 @@ def _get_elem(lst, key):
     try:
         return lst[_get_keys(lst).index(key)]
     except ValueError:
-        raise ValueError('Key "{0}" not found in {1}.'.format(key, _get_keys(lst)))
+        raise ValueError('Key "{}" not found in {}.'.format(key, _get_keys(lst)))
 
 
 def num_to_str(num):
     """ Display logic for numbers """
     def eng_notation(value, fmt='g'):
         """Convert a number to a string in engineering notation.  E.g., 5e-9 -> 5n"""
-        template = '{0:' + fmt + '}{1}'
+        template = '{:' + fmt + '}{}'
         magnitude = abs(value)
         for exp, symbol in zip(range(9, -15-1, -3), 'GMk munpf'):
             factor = 10 ** exp
@@ -92,15 +92,15 @@ class Option(Element):
             try:
                 key, value = opt.split(':')
             except:
-                raise Exception('Error separating "{0}" into key:value'.format(opt))
+                raise Exception('Error separating "{}" into key:value'.format(opt))
             # Test against repeated keys
             if key in self._opts:
-                raise Exception('Key "{0}" already exists in option'.format(key))
+                raise Exception('Key "{}" already exists in option'.format(key))
             # Store the option
             self._opts[key] = value
 
     def __str__(self):
-        return 'Option {0}({1})'.format(self.get_name(), self.get_key())
+        return 'Option {}({})'.format(self.get_name(), self.get_key())
 
     def get_name(self):
         return self._name
@@ -188,26 +188,26 @@ class Param(Element):
             key = option.get_key()
             # Test against repeated keys
             if key in self.get_option_keys():
-                raise Exception('Key "{0}" already exists in options'.format(key))
+                raise Exception('Key "{}" already exists in options'.format(key))
             # Store the option
             self.get_options().append(option)
         # Test the enum options
         if self.is_enum():
             # Test against options with identical keys
             if len(set(self.get_option_keys())) != len(self.get_options()):
-                raise Exception('Options keys "{0}" are not unique.'.format(self.get_option_keys()))
+                raise Exception('Options keys "{}" are not unique.'.format(self.get_option_keys()))
             # Test against inconsistent keys in options
             opt_keys = self.get_options()[0].get_opt_keys()
             for option in self.get_options():
                 if set(opt_keys) != set(option.get_opt_keys()):
-                    raise Exception('Opt keys "{0}" are not identical across all options.'.format(opt_keys))
+                    raise Exception('Opt keys "{}" are not identical across all options.'.format(opt_keys))
             # If a value is specified, it must be in the options keys
             if value or value in self.get_option_keys():
                 self._value = value
             else:
                 self._value = self.get_option_keys()[0]
             if self.get_value() not in self.get_option_keys():
-                raise Exception('The value "{0}" is not in the possible values of "{1}".'.format(self.get_value(), self.get_option_keys()))
+                raise Exception('The value "{}" is not in the possible values of "{}".'.format(self.get_value(), self.get_option_keys()))
         else:
             self._value = value or ''
         self._default = value
@@ -223,7 +223,7 @@ class Param(Element):
             'hex', 'string', 'bool',
             'file_open', 'file_save', '_multiline', '_multiline_python_external',
             'id', 'stream_id',
-            'grid_pos', 'notebook', 'gui_hint',
+            'gui_hint',
             'import',
         )
 
@@ -298,7 +298,7 @@ class Param(Element):
         return self.get_value()
 
     def __str__(self):
-        return 'Param - {0}({1})'.format(self.get_name(), self.get_key())
+        return 'Param - {}({})'.format(self.get_name(), self.get_key())
 
     def get_color(self):
         """
@@ -325,8 +325,6 @@ class Param(Element):
                 'string': Constants.BYTE_VECTOR_COLOR_SPEC,
                 'id': Constants.ID_COLOR_SPEC,
                 'stream_id': Constants.ID_COLOR_SPEC,
-                'grid_pos': Constants.INT_VECTOR_COLOR_SPEC,
-                'notebook': Constants.INT_VECTOR_COLOR_SPEC,
                 'raw': Constants.WILDCARD_COLOR_SPEC,
             }[self.get_type()]
         except:
@@ -362,9 +360,6 @@ class Param(Element):
                     return 'part'
             except:
                 pass
-        # Hide empty grid positions
-        if self.get_key() in ('grid_pos', 'notebook') and not self.get_value():
-            return 'part'
         return hide
 
     def validate(self):
@@ -374,7 +369,7 @@ class Param(Element):
         """
         Element.validate(self)
         if self.get_type() not in self.get_types():
-            self.add_error_message('Type "{0}" is not a possible type.'.format(self.get_type()))
+            self.add_error_message('Type "{}" is not a possible type.'.format(self.get_type()))
 
         self._evaluated = None
         try:
@@ -413,30 +408,30 @@ class Param(Element):
             try:
                 e = self.get_parent().get_parent().evaluate(v)
             except Exception, e:
-                raise Exception('Value "{0}" cannot be evaluated:\n{1}'.format(v, e))
+                raise Exception('Value "{}" cannot be evaluated:\n{}'.format(v, e))
             # Raise an exception if the data is invalid
             if t == 'raw':
                 return e
             elif t == 'complex':
                 if not isinstance(e, COMPLEX_TYPES):
-                    raise Exception('Expression "{0}" is invalid for type complex.'.format(str(e)))
+                    raise Exception('Expression "{}" is invalid for type complex.'.format(str(e)))
                 return e
             elif t == 'real' or t == 'float':
                 if not isinstance(e, REAL_TYPES):
-                    raise Exception('Expression "{0}" is invalid for type float.'.format(str(e)))
+                    raise Exception('Expression "{}" is invalid for type float.'.format(str(e)))
                 return e
             elif t == 'int':
                 if not isinstance(e, INT_TYPES):
-                    raise Exception('Expression "{0}" is invalid for type integer.'.format(str(e)))
+                    raise Exception('Expression "{}" is invalid for type integer.'.format(str(e)))
                 return e
             elif t == 'hex':
                 return hex(e)
             elif t == 'bool':
                 if not isinstance(e, bool):
-                    raise Exception('Expression "{0}" is invalid for type bool.'.format(str(e)))
+                    raise Exception('Expression "{}" is invalid for type bool.'.format(str(e)))
                 return e
             else:
-                raise TypeError('Type "{0}" not handled'.format(t))
+                raise TypeError('Type "{}" not handled'.format(t))
         #########################
         # Numeric Vector Types
         #########################
@@ -448,28 +443,28 @@ class Param(Element):
             try:
                 e = self.get_parent().get_parent().evaluate(v)
             except Exception, e:
-                raise Exception('Value "{0}" cannot be evaluated:\n{1}'.format(v, e))
+                raise Exception('Value "{}" cannot be evaluated:\n{}'.format(v, e))
             # Raise an exception if the data is invalid
             if t == 'complex_vector':
                 if not isinstance(e, VECTOR_TYPES):
                     self._lisitify_flag = True
                     e = [e]
                 if not all([isinstance(ei, COMPLEX_TYPES) for ei in e]):
-                    raise Exception('Expression "{0}" is invalid for type complex vector.'.format(str(e)))
+                    raise Exception('Expression "{}" is invalid for type complex vector.'.format(str(e)))
                 return e
             elif t == 'real_vector' or t == 'float_vector':
                 if not isinstance(e, VECTOR_TYPES):
                     self._lisitify_flag = True
                     e = [e]
                 if not all([isinstance(ei, REAL_TYPES) for ei in e]):
-                    raise Exception('Expression "{0}" is invalid for type float vector.'.format(str(e)))
+                    raise Exception('Expression "{}" is invalid for type float vector.'.format(str(e)))
                 return e
             elif t == 'int_vector':
                 if not isinstance(e, VECTOR_TYPES):
                     self._lisitify_flag = True
                     e = [e]
                 if not all([isinstance(ei, INT_TYPES) for ei in e]):
-                    raise Exception('Expression "{0}" is invalid for type integer vector.'.format(str(e)))
+                    raise Exception('Expression "{}" is invalid for type integer vector.'.format(str(e)))
                 return e
         #########################
         # String Types
@@ -492,20 +487,20 @@ class Param(Element):
         elif t == 'id':
             # Can python use this as a variable?
             if not _check_id_matcher.match(v):
-                raise Exception('ID "{0}" must begin with a letter and may contain letters, numbers, and underscores.'.format(v))
+                raise Exception('ID "{}" must begin with a letter and may contain letters, numbers, and underscores.'.format(v))
             ids = [param.get_value() for param in self.get_all_params(t, 'id')]
 
             if v in ID_BLACKLIST:
-                raise Exception('ID "{0}" is blacklisted.'.format(v))
+                raise Exception('ID "{}" is blacklisted.'.format(v))
 
             if self._key == 'id':
                 # Id should only appear once, or zero times if block is disabled
                 if ids.count(v) > 1:
-                    raise Exception('ID "{0}" is not unique.'.format(v))
+                    raise Exception('ID "{}" is not unique.'.format(v))
             else:
                 # Id should exist to be a reference
                 if ids.count(v) < 1:
-                    raise Exception('ID "{0}" does not exist.'.format(v))
+                    raise Exception('ID "{}" does not exist.'.format(v))
 
             return v
 
@@ -522,11 +517,11 @@ class Param(Element):
             if self.get_parent().is_virtual_sink():
                 # Id should only appear once, or zero times if block is disabled
                 if ids.count(v) > 1:
-                    raise Exception('Stream ID "{0}" is not unique.'.format(v))
+                    raise Exception('Stream ID "{}" is not unique.'.format(v))
             # Check that the virtual source's steam id is found
             if self.get_parent().is_virtual_source():
                 if v not in ids:
-                    raise Exception('Stream ID "{0}" is not found.'.format(v))
+                    raise Exception('Stream ID "{}" is not found.'.format(v))
             return v
 
         #########################
@@ -566,65 +561,6 @@ class Param(Element):
                     return self._ws
             return GuiHint(widget_str)
         #########################
-        # Grid Position Type
-        #########################
-        elif t == 'grid_pos':
-            if not v:
-                # Allow for empty grid pos
-                return ''
-            e = self.get_parent().get_parent().evaluate(v)
-            if not isinstance(e, (list, tuple)) or len(e) != 4 or not all([isinstance(ei, int) for ei in e]):
-                raise Exception('A grid position must be a list of 4 integers.')
-            row, col, row_span, col_span = e
-            # Check row, col
-            if row < 0 or col < 0:
-                raise Exception('Row and column must be non-negative.')
-            # Check row span, col span
-            if row_span <= 0 or col_span <= 0:
-                raise Exception('Row and column span must be greater than zero.')
-            # Get hostage cell parent
-            try:
-                my_parent = self.get_parent().get_param('notebook').evaluate()
-            except:
-                my_parent = ''
-            # Calculate hostage cells
-            for r in range(row_span):
-                for c in range(col_span):
-                    self._hostage_cells.append((my_parent, (row+r, col+c)))
-            # Avoid collisions
-            params = filter(lambda p: p is not self, self.get_all_params('grid_pos'))
-            for param in params:
-                for parent, cell in param._hostage_cells:
-                    if (parent, cell) in self._hostage_cells:
-                        raise Exception('Another graphical element is using parent "{0}", cell "{1}".'.format(str(parent), str(cell)))
-            return e
-        #########################
-        # Notebook Page Type
-        #########################
-        elif t == 'notebook':
-            if not v:
-                # Allow for empty notebook
-                return ''
-
-            # Get a list of all notebooks
-            notebook_blocks = filter(lambda b: b.get_key() == 'notebook', self.get_parent().get_parent().get_enabled_blocks())
-            # Check for notebook param syntax
-            try:
-                notebook_id, page_index = map(str.strip, v.split(','))
-            except:
-                raise Exception('Bad notebook page format.')
-            # Check that the notebook id is valid
-            try:
-                notebook_block = filter(lambda b: b.get_id() == notebook_id, notebook_blocks)[0]
-            except:
-                raise Exception('Notebook id "{0}" is not an existing notebook id.'.format(notebook_id))
-
-            # Check that page index exists
-            if int(page_index) not in range(len(notebook_block.get_param('labels').evaluate())):
-                raise Exception('Page index "{0}" is not a valid index number.'.format(page_index))
-            return notebook_id, page_index
-
-        #########################
         # Import Type
         #########################
         elif t == 'import':
@@ -633,14 +569,14 @@ class Param(Element):
             try:
                 exec v in n
             except ImportError:
-                raise Exception('Import "{0}" failed.'.format(v))
+                raise Exception('Import "{}" failed.'.format(v))
             except Exception:
-                raise Exception('Bad import syntax: "{0}".'.format(v))
+                raise Exception('Bad import syntax: "{}".'.format(v))
             return filter(lambda k: str(k) != '__builtins__', n.keys())
 
         #########################
         else:
-            raise TypeError('Type "{0}" not handled'.format(t))
+            raise TypeError('Type "{}" not handled'.format(t))
 
     def to_code(self):
         """
